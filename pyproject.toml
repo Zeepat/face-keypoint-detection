@@ -27,7 +27,10 @@ dependencies = [
     "six==1.17.0",
     "sympy==1.13.1",
     "torch>=2.5.1",
+    "torchaudio>=2.5.1",
     "torchvision>=0.20.1",
     "typing-extensions==4.9.0",
     "tzdata==2024.2",
 ]
+
+# pip install torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cu121
