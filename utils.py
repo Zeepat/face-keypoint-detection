@@ -9,7 +9,7 @@ from tqdm import tqdm
 from PIL import Image, ImageFile
 
 transform = transforms.Compose([
-    transforms.ToPILImage(),
+    # transforms.ToPILImage(),
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -18,7 +18,7 @@ transform = transforms.Compose([
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class FaceKeypointDataset(Dataset):
-    def __init__(self, annotations, root_dir, transform=None):
+    def __init__(self, annotations, root_dir, transform=transform):
         self.annotations = annotations  # pandas dataframe
         self.root_dir = root_dir        # path to images
         self.transform = transform      # transform operations
@@ -92,8 +92,11 @@ def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128):
     
     return train_loader, val_loader, test_loader
 
-def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, val_loader, epochs=50, device='cuda', bbox_weight=1.0):
+def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, val_loader, epochs=50, device='cuda', bbox_weight=1.0, save_dir="./model/models/", save_best=True):
     model.to(device)
+    
+    os.makedirs(save_dir, exist_ok=True)
+    best_val_loss = float('inf')
     
     for epoch in range(epochs):
         epoch_num = epoch + 1
@@ -150,3 +153,20 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
         avg_train_loss = train_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
         print(f"Epoch {epoch_num}/{epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
+        
+        model_path = os.path.join(save_dir, f"model_epoch_{epoch_num}.pth")
+        torch.save({'epoch': epoch_num, 
+                    'model_state_dict': model.state_dict(), 
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'train_loss': avg_train_loss, 
+                    'val_loss': avg_val_loss}, model_path)
+        
+        if save_best and avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_model_path = os.path.join(save_dir, 'best_model.pth')
+            torch.save({'epoch': epoch_num, 
+                        'model_state_dict': model.state_dict(), 
+                        'optimizer_state_dict': optimizer.state_dict(),
+                        'train_loss': avg_train_loss, 
+                        'val_loss': avg_val_loss}, best_model_path)
+            print(f"Best model saved at epoch {epoch_num} with Val Loss: {avg_val_loss:.4f}")
