@@ -1,0 +1,110 @@
+Epoch 1/50 | Train Loss: 157732.3793 | Val Loss: 143405.7422
+Best model saved at epoch 1 with Val Loss: 143405.7422
+                                                                                            
+Epoch 2/50 | Train Loss: 148942.3107 | Val Loss: 142651.7706
+Best model saved at epoch 2 with Val Loss: 142651.7706
+                                                                                            
+Epoch 3/50 | Train Loss: 147161.0543 | Val Loss: 145542.1689
+                                                                                            
+Epoch 4/50 | Train Loss: 146131.1639 | Val Loss: 145430.8819
+                                                                                            
+Epoch 5/50 | Train Loss: 145096.6185 | Val Loss: 204477.8606
+                                                                                            
+Epoch 6/50 | Train Loss: 144842.2426 | Val Loss: 142522.8462
+Best model saved at epoch 6 with Val Loss: 142522.8462
+                                                                                            
+Epoch 7/50 | Train Loss: 144174.5335 | Val Loss: 137472.2841
+Best model saved at epoch 7 with Val Loss: 137472.2841
+                                                                                            
+Epoch 8/50 | Train Loss: 143580.4316 | Val Loss: 138919.4066
+                                                                                            
+Epoch 9/50 | Train Loss: 142741.4534 | Val Loss: 171400.4093
+                                                                                             
+Epoch 10/50 | Train Loss: 141789.1278 | Val Loss: 135887.1187
+Best model saved at epoch 10 with Val Loss: 135887.1187
+                                                                                             
+Epoch 11/50 | Train Loss: 140470.4221 | Val Loss: 143732.7118
+                                                                                             
+Epoch 12/50 | Train Loss: 138686.5334 | Val Loss: 151413.1457
+                                                                                             
+Epoch 13/50 | Train Loss: 138003.2179 | Val Loss: 136645.4877
+                                                                                             
+Epoch 14/50 | Train Loss: 136547.7602 | Val Loss: 136744.5421
+                                                                                             
+Epoch 15/50 | Train Loss: 135569.7808 | Val Loss: 135814.7485
+Best model saved at epoch 15 with Val Loss: 135814.7485
+                                                                                             
+Epoch 16/50 | Train Loss: 134122.9428 | Val Loss: 166290.5580
+                                                                                             
+Epoch 17/50 | Train Loss: 132347.9910 | Val Loss: 128446.4793
+Best model saved at epoch 17 with Val Loss: 128446.4793
+                                                                                             
+Epoch 18/50 | Train Loss: 132149.9191 | Val Loss: 128509.0129
+                                                                                             
+Epoch 19/50 | Train Loss: 131647.9847 | Val Loss: 173417.4829
+                                                                                             
+Epoch 20/50 | Train Loss: 129998.5920 | Val Loss: 128638.3272
+                                                                                             
+Epoch 21/50 | Train Loss: 129816.4535 | Val Loss: 133090.7764
+                                                                                             
+Epoch 22/50 | Train Loss: 128761.1703 | Val Loss: 134485.7417
+                                                                                             
+Epoch 23/50 | Train Loss: 126880.7151 | Val Loss: 140092.1463
+                                                                                             
+Epoch 24/50 | Train Loss: 123933.7819 | Val Loss: 123967.2991
+Best model saved at epoch 24 with Val Loss: 123967.2991
+                                                                                             
+Epoch 25/50 | Train Loss: 128218.1862 | Val Loss: 141307.6776
+                                                                                             
+Epoch 26/50 | Train Loss: 122300.9154 | Val Loss: 147259.7136
+                                                                                             
+Epoch 27/50 | Train Loss: 120795.4125 | Val Loss: 129769.4892
+                                                                                             
+Epoch 28/50 | Train Loss: 117447.6531 | Val Loss: 125809.8804
+                                                                                             
+Epoch 29/50 | Train Loss: 114085.1587 | Val Loss: 162290.2545
+                                                                                             
+Epoch 30/50 | Train Loss: 111676.6116 | Val Loss: 120739.6642
+Best model saved at epoch 30 with Val Loss: 120739.6642
+                                                                                             
+Epoch 31/50 | Train Loss: 106824.1151 | Val Loss: 135494.9863
+                                                                                             
+Epoch 32/50 | Train Loss: 101960.6151 | Val Loss: 241984.3534
+                                                                                             
+Epoch 33/50 | Train Loss: 98066.4343 | Val Loss: 142177.8353
+                                                                                             
+Epoch 34/50 | Train Loss: 93625.0750 | Val Loss: 457749.6118
+                                                                                             
+Epoch 35/50 | Train Loss: 89053.5596 | Val Loss: 120979.5610
+                                                                                             
+Epoch 36/50 | Train Loss: 81548.8484 | Val Loss: 125373.6573
+                                                                                             
+Epoch 37/50 | Train Loss: 77050.1886 | Val Loss: 249886.1809
+                                                                                             
+Epoch 38/50 | Train Loss: 71579.7258 | Val Loss: 142904.9444
+                                                                                             
+Epoch 39/50 | Train Loss: 68276.8663 | Val Loss: 123074.2150
+                                                                                             
+Epoch 40/50 | Train Loss: 61246.8894 | Val Loss: 117911.0155
+Best model saved at epoch 40 with Val Loss: 117911.0155
+                                                                                             
+Epoch 41/50 | Train Loss: 60021.2616 | Val Loss: 124741.5766
+                                                                                             
+Epoch 42/50 | Train Loss: 53473.5943 | Val Loss: 120400.6394
+                                                                                             
+Epoch 43/50 | Train Loss: 52445.4918 | Val Loss: 128440.7733
+                                                                                             
+Epoch 44/50 | Train Loss: 48275.9960 | Val Loss: 160993.8999
+                                                                                             
+Epoch 45/50 | Train Loss: 44901.6501 | Val Loss: 155539.4730
+                                                                                             
+Epoch 46/50 | Train Loss: 44727.9092 | Val Loss: 129228.6901
+                                                                                             
+Epoch 47/50 | Train Loss: 43746.1577 | Val Loss: 123441.5325
+                                                                                             
+Epoch 48/50 | Train Loss: 42779.9909 | Val Loss: 116921.7194
+Best model saved at epoch 48 with Val Loss: 116921.7194
+                                                                                             
+Epoch 49/50 | Train Loss: 39335.3378 | Val Loss: 119767.6866
+                                                                                             
+Epoch 50/50 | Train Loss: 43800.6938 | Val Loss: 143254.4829
