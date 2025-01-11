@@ -53,7 +53,7 @@ class FaceKeypointDataset(Dataset):
 
 # dataset = FaceKeypointDataset(annotations, 'data/training/', transform=transform)
 
-def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=32):
+def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128):
     total_size = len(dataset)
     train_size = int(train_size * total_size)
     val_size = int(val_size * total_size)
@@ -67,32 +67,38 @@ def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=32):
     
     return train_loader, val_loader, test_loader
 
-# def train(model, criterion, optimizer, train_loader, val_loader, epochs=50, device='cuda'):
-#     model.to(device)
-    
-#     for epoch in range(epochs):
-#         model.train()
-#         train_loss = 0.0
-#         val_loss = 0.0
-#         for i, (images, landmarks) in enumerate(train_loader):
-#             images, landmarks = images.to(device), landmarks.to(device)
+----------------------------------------------------------------------------------------------------------------------------
+def train(model, criterion, optimizer, train_loader, val_loader, epochs=50, device='cuda'):
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(net.parameters(), lr=0.001)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    net.to(device)
+
+    for epoch in range(10):
+        running_loss = 0.0
+        for i, (inputs, labels) in enumerate(dataloader, 0):
+            if inputs is None:
+                continue
             
-#             optimizer.zero_grad()
-#             outputs = model(images)
-#             loss = criterion(outputs, landmarks.view(-1, 8))
-#             loss.backward()
-#             optimizer.step()
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            labels = labels.view(labels.size(0), -1)
+
+            optimizer.zero_grad()
+
+            outputs = net(inputs)
+
+            loss = criterion(outputs, labels)
+
+            loss.backward()
+            optimizer.step()
             
-#             train_loss += loss.item()
-            
-#         model.eval()
-#         with torch.no_grad():
-#             for i, (images, landmarks) in enumerate(val_loader):
-#                 images, landmarks = images.to(device), landmarks.to(device)
-                
-#                 outputs = model(images)
-#                 loss = criterion(outputs, landmarks.view(-1, 8))
-                
-#                 val_loss += loss.item()
-                
-#         print(f"Epoch {epoch+1}/{epochs} | Train Loss: {train_loss/len(train_loader)} | Val Loss: {val_loss/len(val_loader)}")
+            # print(f"outputs shape: {outputs.shape}")
+            # print(f"labels shape: {labels.shape}")
+
+            running_loss += loss.item()
+            if i % 10 == 9:
+                print(f"[{epoch + 1}, {i + 1}] loss: {running_loss / 10}")
+                running_loss = 0.0
