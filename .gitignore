@@ -170,6 +170,8 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 uv.lock
+
+data/
 /data
 
 AFLW/
