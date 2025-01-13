@@ -25,7 +25,7 @@ class Net(nn.Module):
         self.fc_keypoints = nn.Linear(512, 8)  # 4 keypoints * 2 (x, y)
         self.fc_bbox = nn.Linear(512, 4)      # Bounding box (BBox_x, BBox_y, BBbox_width, BBox_height)
         
-        self.drop1 = nn.Dropout(p=0.25)
+        self.drop1 = nn.Dropout(p=0.5)
     
     def forward(self, x):
         x = self.pool(F.relu(self.bn1(self.conv1(x))))
