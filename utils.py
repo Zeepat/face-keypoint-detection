@@ -10,7 +10,12 @@ from PIL import Image, ImageFile
 
 transform = transforms.Compose([
     # transforms.ToPILImage(),
-    transforms.Resize((224, 224)),
+    transforms.Resize(
+        # max_size=224,
+        interpolation=Image.LANCZOS,
+        size=224,
+        ),
+    transforms.CenterCrop(224),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
@@ -18,10 +23,10 @@ transform = transforms.Compose([
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class FaceKeypointDataset(Dataset):
-    def __init__(self, annotations, root_dir, transform=transform):
+    def __init__(self, annotations, root_dir):
         self.annotations = annotations  # pandas dataframe
         self.root_dir = root_dir        # path to images
-        self.transform = transform      # transform operations
+        # self.transform = transform      # transform operations
 
     def __len__(self):
         return len(self.annotations)
@@ -29,43 +34,23 @@ class FaceKeypointDataset(Dataset):
     def __getitem__(self, idx):
         try:
             img_name = os.path.join(self.root_dir, self.annotations["file_id"][idx])
-            
-            # Open the image using PIL
             with Image.open(img_name) as img:
-                img = img.convert('RGB')  # Ensure image has 3 channels
+                img = img.convert('RGB')
+            # Process image on GPU
+            image = gpu_transform(img, torch.device('cuda'))
 
-            # Keypoints
-            landmarks_cols = ["LeftEye_x","LeftEye_y",
-                              "RightEye_x","RightEye_y",
-                              "Nose_x","Nose_y",
-                              "Mouth_x","Mouth_y"]
-            landmarks = self.annotations.loc[idx, landmarks_cols].values
-            landmarks = landmarks.astype('float').reshape(-1, 2)
+            landmarks_cols = ["LeftEye_x", "LeftEye_y", "RightEye_x", "RightEye_y", "Nose_x", "Nose_y", "Mouth_x", "Mouth_y"]
+            landmarks = self.annotations.loc[idx, landmarks_cols].values.astype('float32').reshape(-1, 2)
 
-            if self.transform:
-                image = self.transform(img)
-            else:
-                # If no transform is provided, convert PIL image to tensor
-                image = transforms.ToTensor()(img)
-
-            h, w = image.shape[1:]
-            landmarks[:, 0] *= (224 / w)
-            landmarks[:, 1] *= (224 / h)
-
-            # Bounding Boxes
             bboxes_cols = ['X_box', 'Y_box', 'W_box', 'H_box']
-            bboxes = self.annotations.loc[idx, bboxes_cols].values
-            bboxes = bboxes.astype('float').reshape(-1, 4)
-            bboxes[:, 0] *= (224 / w)
-            bboxes[:, 1] *= (224 / h)
-            bboxes[:, 2] *= (224 / w)
-            bboxes[:, 3] *= (224 / h)
+            bboxes = self.annotations.loc[idx, bboxes_cols].values.astype('float32').reshape(-1, 4)
 
             return image, torch.tensor(landmarks, dtype=torch.float32), torch.tensor(bboxes, dtype=torch.float32)
 
         except Exception as e:
             print(f"Skipping {idx} due to error: {e}")
             return None
+
 
 def skip_none_collate_fn(batch):
     # Filter out any items that are None
@@ -86,9 +71,9 @@ def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128):
     
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=skip_none_collate_fn)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=skip_none_collate_fn, num_workers=8)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn, num_workers=8)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn, num_workers=8)
     
     return train_loader, val_loader, test_loader
 
@@ -170,3 +155,15 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
                         'train_loss': avg_train_loss, 
                         'val_loss': avg_val_loss}, best_model_path)
             print(f"Best model saved at epoch {epoch_num} with Val Loss: {avg_val_loss:.4f}")
+
+
+def gpu_transform(image, device):
+    # Move to GPU tensor
+    image = torch.tensor(np.array(image)).permute(2, 0, 1).to(device).float() / 255.0
+    # Resize
+    image = torch.nn.functional.interpolate(image.unsqueeze(0), size=(224, 224), mode='bilinear', align_corners=False).squeeze(0)
+    # Normalize
+    mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225], device=device).view(3, 1, 1)
+    image = (image - mean) / std
+    return image
