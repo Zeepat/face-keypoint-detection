@@ -108,24 +108,20 @@ def skip_none_collate_fn(batch):
 # 4. Split into Train/Val/Test & Move to Device
 ##########################################################
 
-def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128, device='cuda'):
+def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=96, device='cuda'):
     """
-    Splits the dataset into train, val, test subsets, creates DataLoaders,
-    and returns generators that automatically move data to the specified device.
+    Splits the dataset into train, val, test subsets and creates DataLoaders.
     """
     total_size = len(dataset)
     train_count = int(train_size * total_size)
     val_count = int(val_size * total_size)
     test_count = total_size - train_count - val_count
-    
+
     # Split dataset
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_count, val_count, test_count])
 
     # Create DataLoaders
-    # Added persistent_workers=True (if num_workers>0) for PyTorch 1.7+ 
-    # to reduce DataLoader overhead across epochs.
-    # Increased prefetch_factor to 4 for heavier GPU usage.
-    num_workers = min(os.cpu_count(), 8)  # or choose an appropriate number
+    num_workers = min(os.cpu_count(), 8)
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True,
         collate_fn=skip_none_collate_fn, pin_memory=True,
@@ -145,26 +141,8 @@ def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128, devi
         persistent_workers=True if num_workers > 0 else False
     )
     
-    def to_device(data_loader, device):
-        """
-        Generator that yields data directly on the specified device (non_blocking for faster transfers).
-        """
-        for batch in data_loader:
-            if batch is None:
-                # Entire batch was None
-                continue
-            images, landmarks, bboxes = batch
-            yield (
-                images.to(device, non_blocking=True),
-                landmarks.to(device, non_blocking=True),
-                bboxes.to(device, non_blocking=True)
-            )
-    
-    return (
-        to_device(train_loader, device),
-        to_device(val_loader, device),
-        to_device(test_loader, device)
-    )
+    return train_loader, val_loader, test_loader
+
 
 ##########################################################
 # 5. Training Loop
@@ -205,8 +183,12 @@ def train(
         # Training
         train_bar = tqdm(train_loader, desc=f"Epoch {epoch_num}/{epochs} - Training", leave=False)
         for batch in train_bar:
-            # Each batch is already on the GPU via to_device generator
-            images, landmarks, bboxes = batch
+            # Move each batch to the specified device
+            images, landmarks, bboxes = (
+                batch[0].to(device, non_blocking=True),
+                batch[1].to(device, non_blocking=True),
+                batch[2].to(device, non_blocking=True),
+            )
 
             optimizer.zero_grad()
             keypoints_pred, bboxes_pred = model(images)
@@ -229,7 +211,12 @@ def train(
         val_steps = 0
         with torch.no_grad():
             for batch in val_bar:
-                images, landmarks, bboxes = batch
+                # Move validation batch to the device
+                images, landmarks, bboxes = (
+                    batch[0].to(device, non_blocking=True),
+                    batch[1].to(device, non_blocking=True),
+                    batch[2].to(device, non_blocking=True),
+                )
                 keypoints_pred, bboxes_pred = model(images)
 
                 # Compute validation loss
@@ -242,8 +229,8 @@ def train(
                 val_bar.set_postfix({'Val Loss': f"{loss.item():.4f}"})
 
         # Calculate average losses for the epoch
-        avg_train_loss = train_loss / train_steps
-        avg_val_loss = val_loss / val_steps
+        avg_train_loss = train_loss / train_steps if train_steps > 0 else float('inf')
+        avg_val_loss = val_loss / val_steps if val_steps > 0 else float('inf')
 
         print(f"Epoch {epoch_num}/{epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
 
