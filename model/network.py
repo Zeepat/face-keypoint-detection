@@ -20,6 +20,9 @@ class Net(nn.Module):
         self.bn4 = nn.BatchNorm2d(256)
         self.bn5 = nn.BatchNorm2d(512)
 
+        # Pooling Layer
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        
         # Fully Connected Layers
         self.fc1 = nn.Linear(in_features=512, out_features=1024)
         self.fc2 = nn.Linear(in_features=1024, out_features=512)
