@@ -199,6 +199,7 @@ def train(
         epoch_num = epoch + 1
         model.train()
         train_loss = 0.0
+        train_steps = 0
         val_loss = 0.0
 
         # Training
@@ -219,11 +220,13 @@ def train(
             optimizer.step()
 
             train_loss += loss.item()
+            train_steps += 1
             train_bar.set_postfix({'Batch Loss': f"{loss.item():.4f}"})
 
         # Validation
         model.eval()
         val_bar = tqdm(val_loader, desc=f"Epoch {epoch_num}/{epochs} - Validation", leave=False)
+        val_steps = 0
         with torch.no_grad():
             for batch in val_bar:
                 images, landmarks, bboxes = batch
@@ -235,11 +238,12 @@ def train(
                 loss = loss_keypoints + bbox_weight * loss_bbox
 
                 val_loss += loss.item()
+                val_steps += 1
                 val_bar.set_postfix({'Val Loss': f"{loss.item():.4f}"})
 
         # Calculate average losses for the epoch
-        avg_train_loss = train_loss / len(train_loader)
-        avg_val_loss = val_loss / len(val_loader)
+        avg_train_loss = train_loss / train_steps
+        avg_val_loss = val_loss / val_steps
 
         print(f"Epoch {epoch_num}/{epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
 
