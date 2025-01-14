@@ -38,14 +38,29 @@ class FaceKeypointDataset(Dataset):
                 img = img.convert('RGB')
             # Process image on GPU
             image = gpu_transform(img, torch.device('cuda'))
+            
+            orig_w, orig_h = img.size
 
             landmarks_cols = ["LeftEye_x", "LeftEye_y", "RightEye_x", "RightEye_y", "Nose_x", "Nose_y", "Mouth_x", "Mouth_y"]
             landmarks = self.annotations.loc[idx, landmarks_cols].values.astype('float32').reshape(-1, 2)
 
-            bboxes_cols = ['X_box', 'Y_box', 'W_box', 'H_box']
-            bboxes = self.annotations.loc[idx, bboxes_cols].values.astype('float32').reshape(-1, 4)
+            # bboxes_cols = ['X_box', 'Y_box', 'W_box', 'H_box']
+            # bboxes = self.annotations.loc[idx, bboxes_cols].values.astype('float32').reshape(-1, 4)
+            
+            landmarks[:, 0] /= float(orig_w)  # x / orig_w
+            landmarks[:, 1] /= float(orig_h)  # y / orig_h
 
-            return image, torch.tensor(landmarks, dtype=torch.float32), torch.tensor(bboxes, dtype=torch.float32)
+            # bboxes[:, 0] /= float(orig_w)  # X_box / orig_w
+            # bboxes[:, 1] /= float(orig_h)  # Y_box / orig_h
+            # bboxes[:, 2] /= float(orig_w)  # W_box / orig_w
+            # bboxes[:, 3] /= float(orig_h)  # H_box / orig_h
+
+            # Return the image, normalized keypoints, and normalized bounding boxes
+            return (
+                image,
+                torch.tensor(landmarks, dtype=torch.float32),
+                # torch.tensor(bboxes, dtype=torch.float32)
+            )
 
         except Exception as e:
             print(f"Skipping {idx} due to error: {e}")
@@ -57,11 +72,11 @@ def skip_none_collate_fn(batch):
     batch = [item for item in batch if item is not None]
     if len(batch) == 0:
         return None, None, None
-    images, landmarks, bboxes = zip(*batch)
+    images, landmarks = zip(*batch)
     images = default_collate(images)
     landmarks = default_collate(landmarks)
-    bboxes = default_collate(bboxes)
-    return images, landmarks, bboxes
+    # bboxes = default_collate(bboxes)
+    return images, landmarks#, bboxes
 
 def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128):
     total_size = len(dataset)
@@ -71,9 +86,9 @@ def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128):
     
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=skip_none_collate_fn, num_workers=8)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn, num_workers=8)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn, num_workers=8)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=skip_none_collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn)
     
     return train_loader, val_loader, test_loader
 
@@ -95,16 +110,16 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
         for batch in train_bar:
             if batch[0] is None:
                 continue  # Skip batches where all items were None
-            images, landmarks, bboxes = batch
-            images, landmarks, bboxes = images.to(device), landmarks.to(device), bboxes.to(device)
+            images, landmarks = batch
+            images, landmarks = images.to(device), landmarks.to(device)#, bboxes.to(device)
             
             optimizer.zero_grad()
-            keypoints_pred, bboxes_pred = model(images)
+            keypoints_pred = model(images)
             
             # Compute losses
             loss_keypoints = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))
-            loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
-            loss = loss_keypoints + bbox_weight * loss_bbox  # Combine losses
+            # loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
+            loss = loss_keypoints #+ bbox_weight * loss_bbox  # Combine losses
             
             loss.backward()
             optimizer.step()
@@ -121,14 +136,14 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
             for batch in val_bar:
                 if batch[0] is None:
                     continue  # Skip batches where all items were None
-                images, landmarks, bboxes = batch
-                images, landmarks, bboxes = images.to(device), landmarks.to(device), bboxes.to(device)
+                images, landmarks  = batch
+                images, landmarks = images.to(device), landmarks.to(device)#, bboxes.to(device)
                 
-                keypoints_pred, bboxes_pred = model(images)
+                keypoints_pred = model(images)
                 
                 loss_keypoints = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))
-                loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
-                loss = loss_keypoints + bbox_weight * loss_bbox
+                # loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
+                loss = loss_keypoints# + bbox_weight * loss_bbox
                 
                 val_loss += loss.item()
                 

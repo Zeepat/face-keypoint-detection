@@ -3,10 +3,10 @@ import torch.nn.functional as F
 
 # https://github.com/nalbert9/Facial-Keypoint-Detection/blob/master/models.py
 
-class Net(nn.Module):
+class nalbert_Net(nn.Module):
 
     def __init__(self):
-        super(Net, self).__init__()
+        super(nalbert_Net, self).__init__()
         
         self.conv1 = nn.Conv2d(3, 32, 5)
         self.pool = nn.MaxPool2d(2, 2)
