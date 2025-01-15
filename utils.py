@@ -8,17 +8,17 @@ from torch.utils.data._utils.collate import default_collate
 from tqdm import tqdm
 from PIL import Image, ImageFile
 
-transform = transforms.Compose([
-    # transforms.ToPILImage(),
-    transforms.Resize(
-        # max_size=224,
-        interpolation=Image.LANCZOS,
-        size=224,
-        ),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+# transform = transforms.Compose([
+#     # transforms.ToPILImage(),
+#     transforms.Resize(
+#         # max_size=224,
+#         interpolation=Image.LANCZOS,
+#         size=224,
+#         ),
+#     transforms.CenterCrop(224),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+# ])
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -44,22 +44,22 @@ class FaceKeypointDataset(Dataset):
             landmarks_cols = ["LeftEye_x", "LeftEye_y", "RightEye_x", "RightEye_y", "Nose_x", "Nose_y", "Mouth_x", "Mouth_y"]
             landmarks = self.annotations.loc[idx, landmarks_cols].values.astype('float32').reshape(-1, 2)
 
-            # bboxes_cols = ['X_box', 'Y_box', 'W_box', 'H_box']
-            # bboxes = self.annotations.loc[idx, bboxes_cols].values.astype('float32').reshape(-1, 4)
+            bboxes_cols = ['X_box', 'Y_box', 'W_box', 'H_box']
+            bboxes = self.annotations.loc[idx, bboxes_cols].values.astype('float32').reshape(-1, 4)
             
             landmarks[:, 0] /= float(orig_w)  # x / orig_w
             landmarks[:, 1] /= float(orig_h)  # y / orig_h
 
-            # bboxes[:, 0] /= float(orig_w)  # X_box / orig_w
-            # bboxes[:, 1] /= float(orig_h)  # Y_box / orig_h
-            # bboxes[:, 2] /= float(orig_w)  # W_box / orig_w
-            # bboxes[:, 3] /= float(orig_h)  # H_box / orig_h
+            bboxes[:, 0] /= float(orig_w)  # X_box / orig_w
+            bboxes[:, 1] /= float(orig_h)  # Y_box / orig_h
+            bboxes[:, 2] /= float(orig_w)  # W_box / orig_w
+            bboxes[:, 3] /= float(orig_h)  # H_box / orig_h
 
             # Return the image, normalized keypoints, and normalized bounding boxes
             return (
                 image,
                 torch.tensor(landmarks, dtype=torch.float32),
-                # torch.tensor(bboxes, dtype=torch.float32)
+                torch.tensor(bboxes, dtype=torch.float32)
             )
 
         except Exception as e:
@@ -72,11 +72,11 @@ def skip_none_collate_fn(batch):
     batch = [item for item in batch if item is not None]
     if len(batch) == 0:
         return None, None, None
-    images, landmarks = zip(*batch)
+    images, landmarks, bboxes = zip(*batch)
     images = default_collate(images)
     landmarks = default_collate(landmarks)
-    # bboxes = default_collate(bboxes)
-    return images, landmarks#, bboxes
+    bboxes = default_collate(bboxes)
+    return images, landmarks, bboxes
 
 def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=128):
     total_size = len(dataset)
@@ -110,16 +110,16 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
         for batch in train_bar:
             if batch[0] is None:
                 continue  # Skip batches where all items were None
-            images, landmarks = batch
-            images, landmarks = images.to(device), landmarks.to(device)#, bboxes.to(device)
+            images, landmarks, bboxes = batch
+            images, landmarks, bboxes = images.to(device), landmarks.to(device), bboxes.to(device)
             
             optimizer.zero_grad()
-            keypoints_pred = model(images)
+            keypoints_pred, bboxes_pred = model(images)
             
             # Compute losses
             loss_keypoints = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))
-            # loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
-            loss = loss_keypoints #+ bbox_weight * loss_bbox  # Combine losses
+            loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
+            loss = loss_keypoints + bbox_weight * loss_bbox  # Combine losses
             
             loss.backward()
             optimizer.step()
@@ -136,14 +136,14 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
             for batch in val_bar:
                 if batch[0] is None:
                     continue  # Skip batches where all items were None
-                images, landmarks  = batch
-                images, landmarks = images.to(device), landmarks.to(device)#, bboxes.to(device)
+                images, landmarks, bboxes = batch
+                images, landmarks, bboxes = images.to(device), landmarks.to(device), bboxes.to(device)
                 
-                keypoints_pred = model(images)
+                keypoints_pred, bboxes_pred = model(images)
                 
                 loss_keypoints = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))
-                # loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
-                loss = loss_keypoints# + bbox_weight * loss_bbox
+                loss_bbox = criterion_bbox(bboxes_pred, bboxes.view(-1, 4))
+                loss = loss_keypoints + bbox_weight * loss_bbox
                 
                 val_loss += loss.item()
                 
@@ -173,11 +173,8 @@ def train(model, criterion_keypoints, criterion_bbox, optimizer, train_loader, v
 
 
 def gpu_transform(image, device):
-    # Move to GPU tensor
     image = torch.tensor(np.array(image)).permute(2, 0, 1).to(device).float() / 255.0
-    # Resize
     image = torch.nn.functional.interpolate(image.unsqueeze(0), size=(224, 224), mode='bilinear', align_corners=False).squeeze(0)
-    # Normalize
     mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(3, 1, 1)
     std = torch.tensor([0.229, 0.224, 0.225], device=device).view(3, 1, 1)
     image = (image - mean) / std
