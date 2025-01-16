@@ -16,7 +16,7 @@ class Net(nn.Module):
         
         self.fc1 = nn.Linear(512*6*6, 1024)
         self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 40)
+        self.fc3 = nn.Linear(512, 8)
         
         self.drop1 = nn.Dropout(p=0.5)
         
