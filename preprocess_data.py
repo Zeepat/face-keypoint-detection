@@ -55,10 +55,10 @@ def resize_image_and_adjust_keypoints(img_filename, original_images_dir, output_
             logging.debug(f"Resized image {img_filename} from ({original_width}, {original_height}) to ({resized_width}, {resized_height}).")
 
         # Extract and validate keypoints
-        keypoints = annotations.loc[idx, ["LeftEye_x", "LeftEye_y",
-                                          "RightEye_x", "RightEye_y",
-                                          "Nose_x", "Nose_y",
-                                          "Mouth_x", "Mouth_y"]].values.astype('float')
+        keypoints = annotations.loc[idx, ['LeftEyeCenter_x', 'LeftEyeCenter_y', 
+                     'RightEyeCenter_x', 'RightEyeCenter_y',
+                     'NoseCenter_x', 'NoseCenter_y',  
+                     'MouthCenter_x', 'MouthCenter_y']].values.astype('float')
 
         # Check for NaN or infinite values
         if not np.all(np.isfinite(keypoints)):
@@ -66,7 +66,7 @@ def resize_image_and_adjust_keypoints(img_filename, original_images_dir, output_
             return None
 
         # Ensure there are exactly 8 keypoints
-        if keypoints.shape[0] != 8:
+        if keypoints.shape[0] != len(keypoints.flatten()):
             logging.warning(f"Incorrect number of keypoints for {img_filename}. Expected 8, got {keypoints.shape[0]}. Skipping.")
             return None
 
@@ -138,10 +138,10 @@ def preprocess_dataset(original_annotations_csv, original_images_dir,
         if updated_keypoints is not None:
             # Create a new annotation row with updated keypoints
             new_row = annotations.loc[idx].copy()
-            new_row[["LeftEye_x", "LeftEye_y",
-                    "RightEye_x", "RightEye_y",
-                    "Nose_x", "Nose_y",
-                    "Mouth_x", "Mouth_y"]] = updated_keypoints
+            new_row[['LeftEyeCenter_x', 'LeftEyeCenter_y', 
+                     'RightEyeCenter_x', 'RightEyeCenter_y',
+                     'NoseCenter_x', 'NoseCenter_y',  
+                     'MouthCenter_x', 'MouthCenter_y']] = updated_keypoints
             processed_annotations.append(new_row)
             logging.debug(f"Processed and appended annotations for {img_filename}.")
 
@@ -162,10 +162,10 @@ def preprocess_dataset(original_annotations_csv, original_images_dir,
 
 if __name__ == "__main__":
     # Define paths
-    ORIGINAL_ANNOTATIONS_CSV = r'data\Annotations\annotations.csv'
-    ORIGINAL_IMAGES_DIR = 'data/Images'
-    PROCESSED_ANNOTATIONS_CSV = 'data/Annotations/processed_annotations.csv'
-    PROCESSED_IMAGES_DIR = 'data/Images_Processed'
+    ORIGINAL_ANNOTATIONS_CSV = 'data/data_all_kps/Annotations/annotations.csv'
+    ORIGINAL_IMAGES_DIR = 'data/data_all_kps/Images'
+    PROCESSED_ANNOTATIONS_CSV = 'data/data_all_kps/Annotations/processed_annotations.csv'
+    PROCESSED_IMAGES_DIR = 'data/data_all_kps/Images_Processed'
     
     # Run preprocessing
     preprocess_dataset(

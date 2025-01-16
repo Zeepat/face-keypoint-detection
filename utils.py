@@ -1,13 +1,20 @@
-# utils.py
-
-from torch.utils.data import Dataset, DataLoader, random_split
-from torchvision import transforms
-import torch
 import os
-from torch.utils.data._utils.collate import default_collate
-from tqdm import tqdm
+import numpy as np
+import pandas as pd
 from PIL import Image, ImageFile
+import matplotlib.pyplot as plt
+
 import logging
+from tqdm import tqdm
+
+
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torch.nn.functional as F
+
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+
 
 # Allow loading of truncated images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -17,60 +24,170 @@ logging.basicConfig(filename='data/Annotations/skipped_images.log',
                     level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Define transformation pipeline
-transform = transforms.Compose([
-    transforms.ToTensor(),  # Convert PIL Image to Tensor
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                         std=[0.229, 0.224, 0.225])
-])
-
 class FaceKeypointDataset(Dataset):
+    """
+    Custom Dataset for Facial Keypoint Detection using Albumentations for data augmentation.
+    
+    Args:
+        annotations (pd.DataFrame): DataFrame containing image file names and keypoints.
+        root_dir (str): Directory with all the images.
+        transform (albumentations.Compose, optional): Albumentations transformations to apply.
+    """
     def __init__(self, annotations, root_dir, transform=None):
-        """
-        Args:
-            annotations (pd.DataFrame): DataFrame containing keypoint annotations.
-            root_dir (str): Directory with all the preprocessed images.
-            transform (callable, optional): Optional transform to be applied on an image.
-        """
-        self.annotations = annotations  # pandas dataframe
-        self.root_dir = root_dir        # path to preprocessed images
-        self.transform = transform      # transform operations
+        self.annotations = annotations.reset_index(drop=True)
+        self.root_dir = root_dir
+        self.transform = transform
 
     def __len__(self):
         return len(self.annotations)
 
     def __getitem__(self, idx):
-        try:
-            img_name = os.path.join(self.root_dir, self.annotations["file_id"][idx])
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
 
-            # Open the image using PIL
-            with Image.open(img_name) as img:
-                img = img.convert('RGB')  # Ensure image has 3 channels
+        # Get image path
+        img_name = self.annotations.iloc[idx]['file_id']
+        img_path = os.path.join(self.root_dir, img_name)
+        image = Image.open(img_path).convert('RGB')
 
-            # Keypoints
-            landmarks_cols = ["LeftEye_x","LeftEye_y",
-                              "RightEye_x","RightEye_y",
-                              "Nose_x","Nose_y",
-                              "Mouth_x","Mouth_y"]
-            landmarks = self.annotations.loc[idx, landmarks_cols].values
-            landmarks = landmarks.astype('float')  # Shape: (8,)
+        # Get keypoints
+        keypoints = self.annotations.iloc[idx][['LeftEyeCenter_x', 'LeftEyeCenter_y', 
+                     'RightEyeCenter_x', 'RightEyeCenter_y',
+                     'NoseCenter_x', 'NoseCenter_y',  
+                     'MouthCenter_x', 'MouthCenter_y']].values.astype('float')
 
-            if self.transform:
-                image = self.transform(img)
-            else:
-                # If no transform is provided, convert PIL image to tensor
-                image = transforms.ToTensor()(img)
-                image = transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                                             std=[0.229, 0.224, 0.225])(image)
+        # Normalize keypoints to [0, 1]
+        w, h = image.size
+        keypoints = keypoints / np.array([w, h] * 4)  # Assuming keypoints are in (x, y) format
 
-            # Convert landmarks to tensor
-            landmarks = torch.tensor(landmarks, dtype=torch.float32)
+        # Convert keypoints to list of tuples for Albumentations
+        keypoints = keypoints.reshape(-1, 2).tolist()
 
-            return image, landmarks
+        # Apply transformations
+        if self.transform:
+            transformed = self.transform(image=np.array(image), keypoints=keypoints)
+            image = transformed['image']
+            keypoints = transformed['keypoints']
 
-        except Exception as e:
-            logging.info(f"Skipping {idx} due to error: {e}")
-            return None
+        # If no transformation, convert image to tensor
+        else:
+            image = ToTensorV2()(image=np.array(image))['image']
+
+        # Convert keypoints back to tensor and flatten
+        keypoints = torch.tensor(keypoints).float().flatten()  # Shape: (8,)
+
+        return image, keypoints
+
+def get_train_transforms():
+    """
+    Defines the data augmentation pipeline using Albumentations.
+    
+    Returns:
+        albumentations.Compose: Composed transformations.
+    """
+    return A.Compose([
+        A.HorizontalFlip(p=0.5),
+        A.Rotate(limit=15, p=0.5),
+        A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
+        A.RandomBrightnessContrast(p=0.5),
+        A.GaussianBlur(p=0.3),
+        A.Normalize(mean=[0.485, 0.456, 0.406], 
+                    std=[0.229, 0.224, 0.225]),
+        ToTensorV2()
+    ], keypoint_params=A.KeypointParams(format='xy', remove_invisible=False))
+
+
+def get_validation_transforms():
+    """
+    Defines the validation/test data preprocessing pipeline using Albumentations.
+    
+    Returns:
+        albumentations.Compose: Composed transformations.
+    """
+    return A.Compose([
+        A.Normalize(mean=[0.485, 0.456, 0.406], 
+                    std=[0.229, 0.224, 0.225]),
+        ToTensorV2()
+    ], keypoint_params=A.KeypointParams(format='xy', remove_invisible=False))
+
+def visualize_inference(model, dataset, device='cuda', num_samples=5):
+    """
+    Performs inference on a specified number of test samples and visualizes the predicted keypoints.
+    
+    Args:
+        model (torch.nn.Module): Trained model.
+        dataset (torch.utils.data.Dataset): The test dataset.
+        device (str): Device to perform computations on ('cuda' or 'cpu').
+        num_samples (int): Number of test samples to visualize.
+    """
+    model.to(device)
+    model.eval()
+    
+    for i in range(num_samples):
+        sample = dataset[i]
+        if sample is None:
+            print(f"Sample {i+1} is None. Skipping.")
+            continue
+        image, _ = sample  # Ignoring true_landmarks as per requirement
+        image_tensor = image.unsqueeze(0).to(device)  # Add batch dimension
+
+        with torch.no_grad():
+            pred_keypoints = model(image_tensor)
+        
+        # Convert predicted keypoints to numpy array
+        pred_keypoints = pred_keypoints.cpu().numpy().reshape(-1, 2)
+        
+        # Handle image tensor
+        if isinstance(image, torch.Tensor):
+            # Convert tensor to numpy array and transpose to HxWxC
+            image_np = image.cpu().numpy().transpose((1, 2, 0))
+        elif isinstance(image, np.ndarray):
+            image_np = image
+        else:
+            # Assume image is a PIL Image
+            image_np = np.array(image)
+        
+        plt.figure(figsize=(6,6))
+        plt.imshow(image_np)
+        
+        # Plot predicted keypoints in red
+        plt.scatter(pred_keypoints[:, 0], pred_keypoints[:, 1], c='r', s=20, marker='x', label='Predicted Keypoints')
+        
+        plt.title(f"Test Sample {i+1}")
+        plt.axis('off')
+        plt.legend()
+        plt.show()
+
+
+def visualize_augmented_samples(dataset, num_samples=5):
+    """
+    Visualizes a specified number of augmented samples from the dataset.
+    
+    Args:
+        dataset (torch.utils.data.Dataset): The dataset to visualize samples from.
+        num_samples (int): Number of samples to visualize.
+    """
+    for i in range(num_samples):
+        image, keypoints = dataset[i]
+        image_np = image.permute(1, 2, 0).numpy()
+        # Denormalize for visualization
+        mean = np.array([0.485, 0.456, 0.406])
+        std = np.array([0.229, 0.224, 0.225])
+        image_np = std * image_np + mean
+        image_np = np.clip(image_np, 0, 1)
+        
+        keypoints_np = keypoints.numpy().reshape(-1, 2)  # Shape: (4,2)
+        # Convert back to original scale
+        h, w, _ = image_np.shape
+        keypoints_np[:, 0] *= w
+        keypoints_np[:, 1] *= h
+        
+        plt.figure(figsize=(6,6))
+        plt.imshow(image_np)
+        plt.scatter(keypoints_np[:, 0], keypoints_np[:, 1], c='r', s=20, marker='x')
+        plt.title(f"Augmented Sample {i+1}")
+        plt.axis('off')
+        plt.show()
 
 def skip_none_collate_fn(batch):
     """
@@ -136,6 +253,7 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
     best_val_loss = float('inf')
     epochs_no_improve = 0
     best_model_wts = None
+    history_data = []
 
     for epoch in range(epochs):
         epoch_num = epoch + 1
@@ -195,6 +313,12 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
 
         print(f"Epoch {epoch_num}/{epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
 
+        history_data.append({
+            'epoch': epoch_num,
+            'train_loss': avg_train_loss,
+            'val_loss': avg_val_loss
+        })
+
         # Early Stopping Check
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
@@ -212,4 +336,6 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
     # Load best model weights
     if best_model_wts is not None:
         model.load_state_dict(best_model_wts)
-    return model
+    
+    history_df = pd.DataFrame(history_data)
+    return model, history_df
