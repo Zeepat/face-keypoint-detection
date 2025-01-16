@@ -1,0 +1,131 @@
+Epoch 1/50 | Train Loss: 0.0512 | Val Loss: 0.0347
+Best model saved at epoch 1 with Val Loss: 0.0347
+                                                                                           
+Epoch 2/50 | Train Loss: 0.0364 | Val Loss: 0.0316
+Best model saved at epoch 2 with Val Loss: 0.0316
+                                                                                           
+Epoch 3/50 | Train Loss: 0.0312 | Val Loss: 0.0262
+Best model saved at epoch 3 with Val Loss: 0.0262
+                                                                                           
+Epoch 4/50 | Train Loss: 0.0247 | Val Loss: 0.0191
+Best model saved at epoch 4 with Val Loss: 0.0191
+                                                                                           
+Epoch 5/50 | Train Loss: 0.0194 | Val Loss: 0.0172
+Best model saved at epoch 5 with Val Loss: 0.0172
+                                                                                           
+Epoch 6/50 | Train Loss: 0.0164 | Val Loss: 0.0143
+Best model saved at epoch 6 with Val Loss: 0.0143
+                                                                                           
+Epoch 7/50 | Train Loss: 0.0142 | Val Loss: 0.0127
+Best model saved at epoch 7 with Val Loss: 0.0127
+                                                                                            
+Epoch 8/50 | Train Loss: 0.0122 | Val Loss: 0.0118
+Best model saved at epoch 8 with Val Loss: 0.0118
+                                                                                            
+Epoch 9/50 | Train Loss: 0.0108 | Val Loss: 0.0115
+Best model saved at epoch 9 with Val Loss: 0.0115
+                                                                                             
+Epoch 10/50 | Train Loss: 0.0098 | Val Loss: 0.0113
+Best model saved at epoch 10 with Val Loss: 0.0113
+                                                                                             
+Epoch 11/50 | Train Loss: 0.0088 | Val Loss: 0.0111
+Best model saved at epoch 11 with Val Loss: 0.0111
+                                                                                             
+Epoch 12/50 | Train Loss: 0.0081 | Val Loss: 0.0104
+Best model saved at epoch 12 with Val Loss: 0.0104
+                                                                                             
+Epoch 13/50 | Train Loss: 0.0072 | Val Loss: 0.0095
+Best model saved at epoch 13 with Val Loss: 0.0095
+                                                                                             
+Epoch 14/50 | Train Loss: 0.0068 | Val Loss: 0.0098
+                                                                                             
+Epoch 15/50 | Train Loss: 0.0062 | Val Loss: 0.0100
+                                                                                             
+Epoch 16/50 | Train Loss: 0.0059 | Val Loss: 0.0096
+                                                                                             
+Epoch 17/50 | Train Loss: 0.0055 | Val Loss: 0.0095
+                                                                                             
+Epoch 18/50 | Train Loss: 0.0051 | Val Loss: 0.0091
+Best model saved at epoch 18 with Val Loss: 0.0091
+                                                                                             
+Epoch 19/50 | Train Loss: 0.0050 | Val Loss: 0.0099
+                                                                                             
+Epoch 20/50 | Train Loss: 0.0048 | Val Loss: 0.0095
+                                                                                             
+Epoch 21/50 | Train Loss: 0.0046 | Val Loss: 0.0094
+                                                                                             
+Epoch 22/50 | Train Loss: 0.0045 | Val Loss: 0.0089
+Best model saved at epoch 22 with Val Loss: 0.0089
+                                                                                             
+Epoch 23/50 | Train Loss: 0.0043 | Val Loss: 0.0095
+                                                                                             
+Epoch 24/50 | Train Loss: 0.0044 | Val Loss: 0.0096
+                                                                                             
+Epoch 25/50 | Train Loss: 0.0042 | Val Loss: 0.0095
+                                                                                             
+Epoch 26/50 | Train Loss: 0.0040 | Val Loss: 0.0089
+                                                                                             
+Epoch 27/50 | Train Loss: 0.0040 | Val Loss: 0.0088
+Best model saved at epoch 27 with Val Loss: 0.0088
+                                                                                             
+Epoch 28/50 | Train Loss: 0.0039 | Val Loss: 0.0090
+                                                                                             
+Epoch 29/50 | Train Loss: 0.0039 | Val Loss: 0.0098
+                                                                                             
+Epoch 30/50 | Train Loss: 0.0038 | Val Loss: 0.0090
+                                                                                             
+Epoch 31/50 | Train Loss: 0.0037 | Val Loss: 0.0088
+                                                                                             
+Epoch 32/50 | Train Loss: 0.0037 | Val Loss: 0.0088
+Best model saved at epoch 32 with Val Loss: 0.0088
+                                                                                             
+Epoch 33/50 | Train Loss: 0.0036 | Val Loss: 0.0084
+Best model saved at epoch 33 with Val Loss: 0.0084
+                                                                                             
+Epoch 34/50 | Train Loss: 0.0036 | Val Loss: 0.0091
+                                                                                             
+Epoch 35/50 | Train Loss: 0.0036 | Val Loss: 0.0091
+                                                                                             
+Epoch 36/50 | Train Loss: 0.0036 | Val Loss: 0.0089
+                                                                                             
+Epoch 37/50 | Train Loss: 0.0035 | Val Loss: 0.0087
+                                                                                             
+Epoch 38/50 | Train Loss: 0.0034 | Val Loss: 0.0089
+                                                                                             
+Epoch 39/50 | Train Loss: 0.0034 | Val Loss: 0.0090
+                                                                                             
+Epoch 40/50 | Train Loss: 0.0034 | Val Loss: 0.0087
+                                                                                             
+Epoch 41/50 | Train Loss: 0.0034 | Val Loss: 0.0088
+                                                                                             
+Epoch 42/50 | Train Loss: 0.0033 | Val Loss: 0.0087
+                                                                                             
+Epoch 43/50 | Train Loss: 0.0033 | Val Loss: 0.0088
+                                                                                             
+Epoch 44/50 | Train Loss: 0.0034 | Val Loss: 0.0088
+                                                                                             
+Epoch 45/50 | Train Loss: 0.0033 | Val Loss: 0.0093
+                                                                                             
+Epoch 46/50 | Train Loss: 0.0033 | Val Loss: 0.0085
+                                                                                             
+Epoch 47/50 | Train Loss: 0.0032 | Val Loss: 0.0085
+                                                                                             
+Epoch 48/50 | Train Loss: 0.0032 | Val Loss: 0.0087
+                                                                                             
+Epoch 49/50 | Train Loss: 0.0032 | Val Loss: 0.0088
+                                                                                             
+Epoch 50/50 | Train Loss: 0.0032 | Val Loss: 0.0088
+
+nalbert_Net_wBbox(
+  (conv1): Conv2d(3, 32, kernel_size=(5, 5), stride=(1, 1))
+  (pool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  (conv2): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv3): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv4): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
+  (conv5): Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1))
+  (fc1): Linear(in_features=18432, out_features=1024, bias=True)
+  (fc2): Linear(in_features=1024, out_features=512, bias=True)
+  (fc_keypoints): Linear(in_features=512, out_features=8, bias=True)
+  (fc_bbox): Linear(in_features=512, out_features=4, bias=True)
+  (drop1): Dropout(p=0.5, inplace=False)
+)

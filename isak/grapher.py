@@ -1,9 +1,6 @@
 import matplotlib.pyplot as plt
 import re
-import torch
 import os
-
-from utils import gpu_transform
 
 def plot_loss(epochs, train_losses, val_losses, title=None):
     plt.plot(epochs, train_losses, label="Train Loss")
@@ -35,23 +32,40 @@ def extract_data(file):
     
     return epochs, train_losses, val_losses
 
-def plot_keypoints(image):
-    test_pic = image
+# plot grid of losses
+def plot_grid_losses(data_dir, figsize=(12, 9)):
+    files = [f for f in os.listdir(data_dir)]
+    fig, axs = plt.subplots(-(len(files)//-2), 2, figsize=figsize) # Roligt "ceiling divide" trick!
+    axs = axs.flatten()
+    
+    for i, file in enumerate(files):
+        epochs, train_losses, val_losses = extract_data(os.path.join(data_dir, file))
+        axs[i].plot(epochs, train_losses, label="Train Loss")
+        axs[i].plot(epochs, val_losses, label="Val Loss")
+        axs[i].set_xlabel("Epoch")
+        axs[i].set_ylabel("Loss")
+        axs[i].set_title(file)
+        axs[i].legend()
+    
+    for j in range(i + 1, len(axs)):
+        fig.delaxes(axs[j])
 
-    test_image = plt.imread(test_pic)
-    test_image = gpu_transform(test_image, "cuda").unsqueeze(0).to(device)
+    
+    plt.tight_layout()
+    plt.show()
+    
+# display 1x2 image grid
+from PIL import Image
 
-    with torch.no_grad():
-        pred_keypoints = model(test_image)
-        
-    pred_keypoints_np = pred_keypoints.cpu().numpy().reshape(-1, 2)
-    pred_keypoints_np[:, 0] *= test_image.shape[3]
-    pred_keypoints_np[:, 1] *= test_image.shape[2]
-
-    fig, ax = plt.subplots(1)
-    ax.imshow(test_image.cpu().squeeze().permute(1, 2, 0))
-
-    for (x, y) in pred_keypoints_np:
-        ax.plot(x, y, 'go')
-
+def display_images(image_paths, figsize=(10, 10)):
+    fig, axs = plt.subplots(-(len(image_paths)//-2), 2, figsize=figsize)
+    axs = axs.flatten()
+    
+    for i, image_path in enumerate(image_paths):
+        image = Image.open('imgs/'+image_path)
+        axs[i].imshow(image)
+        axs[i].axis("off")
+        axs[i].set_title(os.path.basename(image_path).rstrip('.png'))
+    
+    plt.tight_layout()
     plt.show()

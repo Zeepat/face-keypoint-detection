@@ -51,13 +51,13 @@ class nalbert_Net_wBbox(nn.Module):
         self.conv4 = nn.Conv2d(128, 256, 3)
         self.conv5 = nn.Conv2d(256, 512, 1)
         
-        self.fc1 = nn.Linear(512, 1024)
+        self.fc1 = nn.Linear(512*6*6, 1024)
         self.fc2 = nn.Linear(1024, 512)
         
         self.fc_keypoints = nn.Linear(512, 8)  # 4 keypoints * 2 (x, y)
         self.fc_bbox = nn.Linear(512, 4)      # Bounding box (x_min, y_min, x_max, y_max)
         
-        self.drop1 = nn.Dropout(p=0.25)
+        self.drop1 = nn.Dropout(p=0.5)
         
     def forward(self, x):
         
@@ -67,7 +67,7 @@ class nalbert_Net_wBbox(nn.Module):
         x = self.pool(F.relu(self.conv4(x)))
         x = self.pool(F.relu(self.conv5(x)))
         
-        x = F.adaptive_avg_pool2d(x, 1)
+        # x = F.adaptive_avg_pool2d(x, 1)
         x = x.view(x.size(0), -1)
         
         x = F.relu(self.fc1(x))
