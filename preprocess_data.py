@@ -55,10 +55,10 @@ def resize_image_and_adjust_keypoints(img_filename, original_images_dir, output_
             logging.debug(f"Resized image {img_filename} from ({original_width}, {original_height}) to ({resized_width}, {resized_height}).")
 
         # Extract and validate keypoints
-        keypoints = annotations.loc[idx, ['LeftEyeCenter_x', 'LeftEyeCenter_y', 
-                     'RightEyeCenter_x', 'RightEyeCenter_y',
-                     'NoseCenter_x', 'NoseCenter_y',  
-                     'MouthCenter_x', 'MouthCenter_y']].values.astype('float')
+        keypoints = annotations.loc[idx, ['LeftEye_x', 'LeftEye_y', 
+                     'RightEye_x', 'RightEye_y',
+                     'Nose_x', 'Nose_y',  
+                     'Mouth_x', 'Mouth_y']].values.astype('float')
 
         # Check for NaN or infinite values
         if not np.all(np.isfinite(keypoints)):
@@ -138,10 +138,10 @@ def preprocess_dataset(original_annotations_csv, original_images_dir,
         if updated_keypoints is not None:
             # Create a new annotation row with updated keypoints
             new_row = annotations.loc[idx].copy()
-            new_row[['LeftEyeCenter_x', 'LeftEyeCenter_y', 
-                     'RightEyeCenter_x', 'RightEyeCenter_y',
-                     'NoseCenter_x', 'NoseCenter_y',  
-                     'MouthCenter_x', 'MouthCenter_y']] = updated_keypoints
+            new_row[['LeftEye_x', 'LeftEye_y', 
+                     'RightEye_x', 'RightEye_y',
+                     'Nose_x', 'Nose_y',  
+                     'Mouth_x', 'Mouth_y']] = updated_keypoints
             processed_annotations.append(new_row)
             logging.debug(f"Processed and appended annotations for {img_filename}.")
 

@@ -51,10 +51,10 @@ class FaceKeypointDataset(Dataset):
         image = Image.open(img_path).convert('RGB')
 
         # Get keypoints
-        keypoints = self.annotations.iloc[idx][['LeftEyeCenter_x', 'LeftEyeCenter_y', 
-                     'RightEyeCenter_x', 'RightEyeCenter_y',
-                     'NoseCenter_x', 'NoseCenter_y',  
-                     'MouthCenter_x', 'MouthCenter_y']].values.astype('float')
+        keypoints = self.annotations.iloc[idx][['LeftEye_x', 'LeftEye_y', 
+                     'RightEye_x', 'RightEye_y',
+                     'Nose_x', 'Nose_y',  
+                     'Mouth_x', 'Mouth_y']].values.astype('float')
 
         # Normalize keypoints to [0, 1]
         w, h = image.size
