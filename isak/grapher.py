@@ -1,3 +1,4 @@
+from PIL import Image
 import matplotlib.pyplot as plt
 import re
 import os
@@ -32,7 +33,6 @@ def extract_data(file):
     
     return epochs, train_losses, val_losses
 
-# plot grid of losses
 def plot_grid_losses(data_dir, figsize=(12, 9)):
     files = [f for f in os.listdir(data_dir)]
     fig, axs = plt.subplots(-(len(files)//-2), 2, figsize=figsize) # Roligt "ceiling divide" trick!
@@ -50,22 +50,22 @@ def plot_grid_losses(data_dir, figsize=(12, 9)):
     for j in range(i + 1, len(axs)):
         fig.delaxes(axs[j])
 
-    
+    fig.suptitle("Losses (fig. 2)")
     plt.tight_layout()
     plt.show()
     
-# display 1x2 image grid
-from PIL import Image
 
-def display_images(image_paths, figsize=(10, 10)):
+def display_images(image_paths, figsize=(10, 10), titles: list = None):
     fig, axs = plt.subplots(-(len(image_paths)//-2), 2, figsize=figsize)
     axs = axs.flatten()
     
     for i, image_path in enumerate(image_paths):
-        image = Image.open('imgs/'+image_path)
+        image = Image.open('imgs/inference/'+image_path)
         axs[i].imshow(image)
         axs[i].axis("off")
-        axs[i].set_title(os.path.basename(image_path).rstrip('.png'))
+        if titles:
+            axs[i].set_title(titles[i])
     
+    fig.suptitle("Inference Images - Low loss = better (fig. 3)")
     plt.tight_layout()
     plt.show()
