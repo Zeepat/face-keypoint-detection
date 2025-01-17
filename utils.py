@@ -16,10 +16,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-# Allow loading of truncated images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Configure logging for skipped images
 logging.basicConfig(filename='data/Annotations/skipped_images.log', 
                     level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,12 +43,10 @@ class FaceKeypointDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        # Get image path
         img_name = self.annotations.iloc[idx]['file_id']
         img_path = os.path.join(self.root_dir, img_name)
         image = Image.open(img_path).convert('RGB')
 
-        # Get keypoints
         keypoints = self.annotations.iloc[idx][['LeftEye_x', 'LeftEye_y', 
                      'RightEye_x', 'RightEye_y',
                      'Nose_x', 'Nose_y',  
@@ -58,22 +54,18 @@ class FaceKeypointDataset(Dataset):
 
         # Normalize keypoints to [0, 1]
         w, h = image.size
-        keypoints = keypoints / np.array([w, h] * 4)  # Assuming keypoints are in (x, y) format
+        keypoints = keypoints / np.array([w, h] * 4)
 
-        # Convert keypoints to list of tuples for Albumentations
         keypoints = keypoints.reshape(-1, 2).tolist()
 
-        # Apply transformations
         if self.transform:
             transformed = self.transform(image=np.array(image), keypoints=keypoints)
             image = transformed['image']
             keypoints = transformed['keypoints']
 
-        # If no transformation, convert image to tensor
         else:
             image = ToTensorV2()(image=np.array(image))['image']
 
-        # Convert keypoints back to tensor and flatten
         keypoints = torch.tensor(keypoints).float().flatten()  # Shape: (8,)
 
         return image, keypoints
@@ -128,29 +120,24 @@ def visualize_inference(model, dataset, device='cuda', num_samples=5):
         if sample is None:
             print(f"Sample {i+1} is None. Skipping.")
             continue
-        image, _ = sample  # Ignoring true_landmarks as per requirement
-        image_tensor = image.unsqueeze(0).to(device)  # Add batch dimension
+        image, _ = sample
+        image_tensor = image.unsqueeze(0).to(device)
 
         with torch.no_grad():
             pred_keypoints = model(image_tensor)
         
-        # Convert predicted keypoints to numpy array
         pred_keypoints = pred_keypoints.cpu().numpy().reshape(-1, 2)
         
-        # Handle image tensor
         if isinstance(image, torch.Tensor):
-            # Convert tensor to numpy array and transpose to HxWxC
             image_np = image.cpu().numpy().transpose((1, 2, 0))
         elif isinstance(image, np.ndarray):
             image_np = image
         else:
-            # Assume image is a PIL Image
             image_np = np.array(image)
         
         plt.figure(figsize=(6,6))
         plt.imshow(image_np)
         
-        # Plot predicted keypoints in red
         plt.scatter(pred_keypoints[:, 0], pred_keypoints[:, 1], c='r', s=20, marker='x', label='Predicted Keypoints')
         
         plt.title(f"Test Sample {i+1}")
@@ -189,48 +176,6 @@ def visualize_augmented_samples(dataset, num_samples=5):
         plt.axis('off')
         plt.show()
 
-def skip_none_collate_fn(batch):
-    """
-    Collate function that filters out None samples and collates the rest.
-    Returns:
-        images: Tensor of shape (batch_size, 3, 224, 224)
-        landmarks: Tensor of shape (batch_size, 8)
-    """
-    # Filter out any items that are None
-    batch = [item for item in batch if item is not None]
-    if len(batch) == 0:
-        return None, None
-    images, landmarks = zip(*batch)
-    images = default_collate(images)
-    landmarks = default_collate(landmarks)
-    return images, landmarks
-
-def train_test_split(dataset, train_size=0.8, val_size=0.1, batch_size=32):
-    """
-    Splits the dataset into training, validation, and test sets.
-
-    Args:
-        dataset (Dataset): The dataset to split.
-        train_size (float): Proportion of the dataset to include in the training set.
-        val_size (float): Proportion of the dataset to include in the validation set.
-        batch_size (int): Number of samples per batch.
-
-    Returns:
-        train_loader, val_loader, test_loader (DataLoader): DataLoaders for each split.
-    """
-    total_size = len(dataset)
-    train_size = int(train_size * total_size)
-    val_size = int(val_size * total_size)
-    test_size = total_size - train_size - val_size
-
-    train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=skip_none_collate_fn)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=skip_none_collate_fn)
-
-    return train_loader, val_loader, test_loader
-
 def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_loader, epochs=50, device='cuda', patience=10):
     """
     Trains the model on the provided dataset with progress bars, early stopping, and checkpointing.
@@ -265,22 +210,20 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
         train_bar = tqdm(train_loader, desc=f"Epoch {epoch_num}/{epochs} - Training", leave=False)
         for batch in train_bar:
             if batch[0] is None:
-                continue  # Skip batches where all items were None
+                continue
             images, landmarks = batch
             images, landmarks = images.to(device), landmarks.to(device)
 
             optimizer.zero_grad()
             keypoints_pred = model(images)
 
-            # Compute loss
-            loss = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))  # Ensure shape matches [Batch, 8]
+            loss = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))
 
             loss.backward()
             optimizer.step()
 
             train_loss += loss.item()
 
-            # Update tqdm description with current loss
             train_bar.set_postfix({'Batch Loss': loss.item()})
 
         # Validation Phase
@@ -289,25 +232,21 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
         with torch.no_grad():
             for batch in val_bar:
                 if batch[0] is None:
-                    continue  # Skip batches where all items were None
+                    continue
                 images, landmarks = batch
                 images, landmarks = images.to(device), landmarks.to(device)
 
                 keypoints_pred = model(images)
 
-                # Compute loss
-                loss = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))  # Ensure shape matches [Batch, 8]
+                loss = criterion_keypoints(keypoints_pred, landmarks.view(-1, 8))
 
                 val_loss += loss.item()
 
-                # Update tqdm description with current validation loss
                 val_bar.set_postfix({'Val Loss': loss.item()})
 
-        # Scheduler Step (if using a scheduler based on validation loss)
         if scheduler is not None:
             scheduler.step(val_loss / len(val_loader))
 
-        # Calculate average losses
         avg_train_loss = train_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
 
@@ -319,12 +258,11 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
             'val_loss': avg_val_loss
         })
 
-        # Early Stopping Check
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             epochs_no_improve = 0
             best_model_wts = model.state_dict()
-            torch.save(best_model_wts, 'best_keypoint_model.pth')  # Save the best model
+            torch.save(best_model_wts, 'best_keypoint_model.pth')
             print("Validation loss decreased. Saving model...")
         else:
             epochs_no_improve += 1
@@ -333,7 +271,6 @@ def train(model, criterion_keypoints, optimizer, scheduler, train_loader, val_lo
                 print("Early stopping triggered!")
                 break
 
-    # Load best model weights
     if best_model_wts is not None:
         model.load_state_dict(best_model_wts)
     
